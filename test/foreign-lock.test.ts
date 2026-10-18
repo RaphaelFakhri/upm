@@ -178,6 +178,26 @@ snapshots:
     expect(lock.packages["a@1.0.0"]!.dependencies).toBeUndefined();
   });
 
+  it("leaves an npm bundle its parent names, with no entry of its own, to the tarball", () => {
+    // npm writes no `inBundle` entries for a package it did not unpack, as one for another cpu.
+    const text = JSON.stringify({
+      lockfileVersion: 3,
+      packages: {
+        "": { dependencies: { a: "^1" } },
+        "node_modules/a": {
+          version: "1.0.0",
+          resolved: "https://registry.npmjs.org/a/-/a-1.0.0.tgz",
+          integrity: "sha512-a",
+          bundleDependencies: ["b"],
+          dependencies: { b: "^1" },
+        },
+      },
+    });
+    const { lock } = readForeign("package-lock.json", text, { dependencies: { a: "^1" } }, npmjs);
+    expect(Object.keys(lock.packages)).toEqual(["a@1.0.0"]);
+    expect(lock.packages["a@1.0.0"]!.dependencies).toBeUndefined();
+  });
+
   it("refuses two packages under one pnpm alias", () => {
     const text = `lockfileVersion: '9.0'
 importers:
